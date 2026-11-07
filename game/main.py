@@ -12,6 +12,32 @@ clock = pygame.time.Clock()
 
 # loading maps
 zoom = 2
+player_size = (25 * zoom, 25 * zoom)
+
+animations = {
+    "Up": [],
+    "Down": [],
+    "Left": [],
+    "Right": []
+}
+
+for direction in animations:
+    for frame in range(1,6):
+        image = pygame.image.load(f"game/images/walk/{direction}/{frame}.png").convert_alpha()
+        image = pygame.transform.scale(image,player_size)
+        animations[direction].append(image)
+
+current_direction = "Down"
+player_surf = animations["Down"][0]
+player_rect = player_surf.get_rect(topleft=(100,80))
+player_speed = 100 * zoom
+
+# animation variables
+animation_index = 0
+animation_timer = 0
+animation_speed = 0.12
+
+
 tmx_data = load_pygame("game/map.tmx")
 
 map_width = tmx_data.width * tmx_data.tilewidth * zoom
@@ -97,17 +123,19 @@ CAMERA_MARGIN_X = 300
 CAMERA_MARGIN_Y = 200
 
 
-player_surf = pygame.image.load('game/images/walk/Down/1.png')
-player_surf = pygame.transform.scale(player_surf,(50,50))
-player_rect = player_surf.get_rect(center=(20,40))
-player_speed = 300
+
 player_x = float(player_rect.x)
 player_y = float(player_rect.y)
 
 async def main():
     global camera_x,camera_y
     global player_x,player_y
-    
+    global current_direction
+    global player_rect
+
+    animation_index = 0
+    animation_timer = 0
+
     running = True
     while running:
 
@@ -160,6 +188,32 @@ async def main():
                     player_rect.top = collision.bottom 
                 player_y = player_rect.y
 
+        if dx != 0 or dy != 0:
+            if abs(dx) > abs(dy):
+                if dx > 0:
+                    current_direction = "Right"
+                else:
+                    current_direction = "Left"
+            else:
+                if dy > 0:
+                    current_direction = "Down"
+                else:
+                    current_direction = "Up"
+
+            animation_timer += dt
+
+            if animation_timer >= animation_speed:
+                animation_timer = 0
+                animation_index = (animation_index + 1) % len(animations[current_direction])
+
+        else:
+            animation_index = 0
+            animation_timer = 0
+
+        player_surf = animations[current_direction][animation_index]
+
+        old_center = player_rect.center
+        player_rect = player_surf.get_rect(center=old_center)
 
         player_rect.topleft = (round(player_x), round(player_y))
 
