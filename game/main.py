@@ -25,7 +25,14 @@ for layer in tmx_data.visible_layers:
             scaled_image = pygame.transform.scale(image,(image.get_width() * zoom,image.get_height() * zoom))
             map_surface.blit(scaled_image,(x * tmx_data.tilewidth * zoom,y * tmx_data.tileheight * zoom))
 
+collision_rects = []
+collision_layer = tmx_data.get_layer_by_name("collision")
 
+for x,y,image in collision_layer.tiles():
+
+    rect = pygame.Rect(x * tmx_data.tilewidth * zoom, y * tmx_data.tileheight * zoom, tmx_data.tilewidth * zoom, tmx_data.tileheight * zoom)
+
+    collision_rects.append(rect)
 # # Player Class
 # class Player(pygame.sprite.Sprite):
 #     def __init__(self,pos):
@@ -113,14 +120,46 @@ async def main():
                 if event.key == pygame.K_SPACE:
                     pass
         keys = pygame.key.get_pressed()
+
+        dx = 0
+        dy = 0
+
         if keys[pygame.K_UP]:
-            player_y -= player_speed * dt
+            dy = -1
         if keys[pygame.K_DOWN]:
-            player_y += player_speed * dt
+            dy = 1
         if keys[pygame.K_LEFT]:
-            player_x -= player_speed * dt
+            dx = -1
         if keys[pygame.K_RIGHT]:
-            player_x += player_speed * dt
+            dx = 1
+
+        direction = pygame.Vector2(dx,dy)
+
+        if direction.length() > 0:
+            direction = direction.normalize()
+
+        player_x += direction.x * player_speed * dt
+        player_rect.x = round(player_x)
+
+        for collision in collision_rects:
+            if player_rect.colliderect(collision):
+                if direction.x > 0:
+                    player_rect.right = collision.left 
+                elif direction.x < 0:
+                    player_rect.left = collision.right
+                player_x = player_rect.x
+
+        player_y += direction.y * player_speed * dt
+        player_rect.y = round(player_y)
+
+        for collision in collision_rects:
+            if player_rect.colliderect(collision):
+                if direction.y > 0:
+                    player_rect.bottom = collision.top 
+                elif direction.y < 0:
+                    player_rect.top = collision.bottom 
+                player_y = player_rect.y
+
 
         player_rect.topleft = (round(player_x), round(player_y))
 
