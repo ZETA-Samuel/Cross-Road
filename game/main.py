@@ -11,19 +11,19 @@ pygame.display.set_caption("Cross Roads")
 clock = pygame.time.Clock()
 
 # loading maps
+zoom = 2
 tmx_data = load_pygame("game/map.tmx")
 
-map_width = tmx_data.width * tmx_data.tilewidth
-map_height = tmx_data.height * tmx_data.tileheight
+map_width = tmx_data.width * tmx_data.tilewidth * zoom
+map_height = tmx_data.height * tmx_data.tileheight * zoom
 
 map_surface = pygame.Surface((map_width,map_height), pygame.SRCALPHA)
-
 # Draw map layers
 for layer in tmx_data.visible_layers:
     if hasattr(layer, "tiles"):
         for x,y,image in layer.tiles():
-
-            map_surface.blit(image,(x*tmx_data.tilewidth,y*tmx_data.tileheight))
+            scaled_image = pygame.transform.scale(image,(image.get_width() * zoom,image.get_height() * zoom))
+            map_surface.blit(scaled_image,(x * tmx_data.tilewidth * zoom,y * tmx_data.tileheight * zoom))
 
 
 # # Player Class
@@ -91,13 +91,15 @@ CAMERA_MARGIN_Y = 200
 
 
 player_surf = pygame.image.load('game/images/walk/Down/1.png')
-player_surf = pygame.transform.scale(player_surf,(100,100))
-player_rect = player_surf.get_rect(center=(400,300))
-player_speed = 100
-
+player_surf = pygame.transform.scale(player_surf,(50,50))
+player_rect = player_surf.get_rect(center=(20,40))
+player_speed = 300
+player_x = float(player_rect.x)
+player_y = float(player_rect.y)
 
 async def main():
     global camera_x,camera_y
+    global player_x,player_y
     
     running = True
     while running:
@@ -112,13 +114,15 @@ async def main():
                     pass
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
-            player_rect.centery -= player_speed * dt
+            player_y -= player_speed * dt
         if keys[pygame.K_DOWN]:
-            player_rect.centery += player_speed * dt
+            player_y += player_speed * dt
         if keys[pygame.K_LEFT]:
-            player_rect.centerx -= player_speed * dt
+            player_x -= player_speed * dt
         if keys[pygame.K_RIGHT]:
-            player_rect.centerx += player_speed * dt
+            player_x += player_speed * dt
+
+        player_rect.topleft = (round(player_x), round(player_y))
 
         screen_player_x = player_rect.centerx - camera_x
         screen_player_y = player_rect.centery - camera_y
@@ -139,12 +143,14 @@ async def main():
         elif screen_player_y < CAMERA_MARGIN_Y:
             camera_y = player_rect.centery - CAMERA_MARGIN_Y
 
+        camera_x = max(0, min(camera_x, map_width - width))
+        camera_y = max(0, min(camera_y,map_height - height))
 
         screen.fill('green')
 
         screen.blit(map_surface, (-camera_x,-camera_y))
 
-        screen.blit(player_surf,(player_rect.centerx - camera_x,player_rect.centery - camera_y))
+        screen.blit(player_surf,(player_rect.x - camera_x,player_rect.y - camera_y))
 
         pygame.display.update()
         await asyncio.sleep(0)
