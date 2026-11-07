@@ -1,0 +1,68 @@
+{
+    "activeFile": "map.tmx",
+    "expandedProjectPaths": [
+        ".",
+        "maps"
+    ],
+    "fileStates": {
+        "Tileset_1.tsx": {
+            "scaleInDock": 3,
+            "scaleInEditor": 1
+        },
+        "Tileset_2.tsx": {
+            "scaleInDock": 4,
+            "scaleInEditor": 11
+        },
+        "Tileset_3.tsx": {
+            "scaleInDock": 4,
+            "scaleInEditor": 11
+        },
+        "map.tmx": {
+            "scale": 0.33,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 1563.6363636363635,
+                "y": 889.3939393939395
+            }
+        },
+        "maps/Tileset_1.tsx": {
+            "scaleInDock": 1
+        },
+        "maps/Tileset_2.tsx": {
+            "scaleInDock": 1
+        },
+        "maps/Tileset_3.tsx": {
+            "scaleInDock": 1
+        },
+        "maps/map.tmx": {
+            "scale": 0.325671875,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 1599.769706856019,
+                "y": 801.4201410545508
+            }
+        }
+    },
+    "last.imagePath": "D:/Sargam/CrossRoads/game/images",
+    "map.height": 50,
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 16,
+    "map.tileWidth": 16,
+    "map.width": 50,
+    "openFiles": [
+        "map.tmx"
+    ],
+    "project": "Cross_map.tiled-project",
+    "recentFiles": [
+        "map.tmx",
+        "maps/map.tmx",
+        "Tileset_3.tsx",
+        "Tileset_2.tsx",
+        "Tileset_1.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    }
+}
