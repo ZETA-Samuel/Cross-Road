@@ -50,6 +50,7 @@ map_surface = pygame.Surface((map_width,map_height), pygame.SRCALPHA)
 for layer in tmx_data.visible_layers:
     if hasattr(layer, "tiles"):
         for x,y,image in layer.tiles():
+            print(x,y,image)
             scaled_image = pygame.transform.scale(image,(image.get_width() * zoom,image.get_height() * zoom))
             map_surface.blit(scaled_image,(x * tmx_data.tilewidth * zoom,y * tmx_data.tileheight * zoom))
 
@@ -67,12 +68,12 @@ npcs = [
     NPC(
         name="Lost traveller",
         image_name="1.png",
-        position=(300,300),
+        position=(330,300),
         dialogue=[
-            "Are you also lost?",
-            "Well there is a way out",
-            "Collect all the coins and head to the door",
-            "Don't worry about me :)"
+            "Hi my name is Squirk",
+            "I am also lost",
+            "This place has been turned into ruins by monsters",
+            "We must fight them to retain our peace",
         ],
         zoom=zoom
         )
@@ -145,8 +146,6 @@ camera_y = 0
 CAMERA_MARGIN_X = 300
 CAMERA_MARGIN_Y = 200
 
-
-
 player_x = float(player_rect.x)
 player_y = float(player_rect.y)
 
@@ -164,8 +163,6 @@ def get_nearest_npc():
             nearest = npc
 
         return nearest
-
-
 
 async def main():
     global camera_x,camera_y
@@ -303,6 +300,8 @@ async def main():
         if nearby_npc and not dialogue_box.active:
             nearby_npc.draw_prompt(screen,camera_x,camera_y)
 
+        dialogue_box.update(dt)
+        
         dialogue_box.draw()
 
         pygame.display.update()

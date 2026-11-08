@@ -12,7 +12,7 @@ class NPC:
 
         original_width,original_height = self.image.get_size()
 
-        self.image = pygame.transform.scale(self.image, (original_width * zoom, original_height * zoom))
+        self.image = pygame.transform.scale(self.image, (original_width * zoom * 1.25, original_height * zoom * 1.25))
 
         world_position = (position[0] * zoom,position[1] * zoom)
 
