@@ -1,9 +1,18 @@
+# /// script
+# dependencies = [
+#   "pytmx",
+# ]
+# ///
+
 import pygame
 import asyncio
+from pathlib import Path
 from pytmx.util_pygame import load_pygame
 from npc import NPC
 from dialogue import DialogueBox
 from boss import Boss
+
+GAME_DIR = Path(__file__).resolve().parent
 
 pygame.init()
 pygame.mixer.init()
@@ -14,7 +23,7 @@ pygame.display.set_caption("Cross Roads")
 
 clock = pygame.time.Clock()
 
-pygame.mixer.music.load("game/music/background.ogg")
+pygame.mixer.music.load(str(GAME_DIR / "music" / "background.ogg"))
 pygame.mixer.music.set_volume(0.4)
 pygame.mixer.music.play(-1)
 
@@ -22,6 +31,7 @@ pygame.mixer.music.play(-1)
 # loading maps
 zoom = 2
 player_size = (25 * zoom, 25 * zoom)
+PLAYER_START = (60,60)
 
 animations = {
     "Up": [],
@@ -32,27 +42,27 @@ animations = {
 
 for direction in animations:
     for frame in range(1,6):
-        image = pygame.image.load(f"game/images/walk/{direction}/{frame}.png").convert_alpha()
+        image = pygame.image.load(
+            str(GAME_DIR / "images" / "walk" / direction / f"{frame}.png")
+        ).convert_alpha()
         image = pygame.transform.scale(image,player_size)
         animations[direction].append(image)
 
 current_direction = "Down"
 player_surf = animations["Down"][0]
-player_rect = player_surf.get_rect(topleft=(60,60))
+player_rect = player_surf.get_rect(topleft=PLAYER_START)
 player_speed = 100 * zoom
 
-COIN_POSITION = (3879,919)
-PORTAL_POSITION = (6322,714)
-
-PORTAL_DESTINATION = (60,60)
+COIN_WORLD_POSITION = (3879,919)
+PORTAL_WORLD_POSITION = (6300,714)
 
 coin_collected = False
 
-coin_rect = pygame.Rect(COIN_POSITION[0] * zoom,COIN_POSITION[1] * zoom,20 * zoom,20 * zoom)
+coin_rect = pygame.Rect(*COIN_WORLD_POSITION,20 * zoom,20 * zoom)
 
-portal_rect = pygame.Rect(PORTAL_POSITION[0] * zoom,PORTAL_POSITION[1] * zoom, 40 * zoom, 60 * zoom)
+portal_rect = pygame.Rect(*PORTAL_WORLD_POSITION,40 * zoom,60 * zoom)
 
-BOSS_POSITION = (3879,919)
+BOSS_WORLD_POSITION = COIN_WORLD_POSITION
 
 boss = None
 game_timer = 0
@@ -63,15 +73,13 @@ BOSS_SPAWN_TIME = 120
 red_flash_timer = 0
 RED_FLASH_DURATION = 0.2
 
-PLAYER_START = (60,60)
-
 # animation variables
 animation_index = 0
 animation_timer = 0
 animation_speed = 0.12
 
 
-tmx_data = load_pygame("game/map.tmx")
+tmx_data = load_pygame(str(GAME_DIR / "map.tmx"))
 
 map_width = tmx_data.width * tmx_data.tilewidth * zoom
 map_height = tmx_data.height * tmx_data.tileheight * zoom
@@ -81,7 +89,6 @@ map_surface = pygame.Surface((map_width,map_height), pygame.SRCALPHA)
 for layer in tmx_data.visible_layers:
     if hasattr(layer, "tiles"):
         for x,y,image in layer.tiles():
-            print(x,y,image)
             scaled_image = pygame.transform.scale(image,(image.get_width() * zoom,image.get_height() * zoom))
             map_surface.blit(scaled_image,(x * tmx_data.tilewidth * zoom,y * tmx_data.tileheight * zoom))
 
@@ -100,7 +107,7 @@ npcs = [
         name="Lost traveller",
         image_name="1.png",
         portrait_name="cat.png",
-        position=(768,30),
+        position=(80,60),
         dialogue=[
             "...",
             "Hey!",
@@ -116,7 +123,7 @@ npcs = [
         name="Wanderer",
         image_name="npc_1.png",
         portrait_name="npc_1.png",
-        position=(768,1522),
+        position=(140,60),
         dialogue=[
             "...",
             "Hey, here's a tip:",
@@ -129,7 +136,7 @@ npcs = [
         name="Watcher",
         image_name="npc_2.png",
         portrait_name="npc_2.png",
-        position=(2056,1440),
+        position=(200,60),
         dialogue=[
             "...",
             "Have you seen the Giant??",
@@ -254,7 +261,7 @@ async def main():
         game_timer += dt
 
         if boss is None and game_timer >= BOSS_SPAWN_TIME:
-            boss = Boss(BOSS_POSITION, zoom)
+            boss = Boss(BOSS_WORLD_POSITION, zoom)
 
         portal_distance = pygame.Vector2(player_rect.center).distance_to(portal_rect.center)
 
@@ -308,8 +315,7 @@ async def main():
 
                     print("PLAYER HIT! RESPAWNING...")
 
-                    player_x = PLAYER_START[0] * zoom
-                    player_y = PLAYER_START[1] * zoom
+                    player_x, player_y = PLAYER_START
 
                     player_rect.topleft = (round(player_x),round(player_y))
 
@@ -470,10 +476,7 @@ async def main():
 
             screen.blit(red_overlay, (0,0))
 
-        print(player_x,player_y)
-
         pygame.display.update()
         await asyncio.sleep(0)
 
 asyncio.run(main())
-

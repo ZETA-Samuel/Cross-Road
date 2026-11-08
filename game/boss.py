@@ -1,9 +1,12 @@
 import pygame
+from pathlib import Path
+
 class Boss:
-    def __init__(self,position,zoom):
+    def __init__(self,world_position,zoom):
         self.zoom = zoom
 
-        self.sheet = pygame.image.load("game/images/boss/boss.png").convert_alpha()
+        sheet_path = Path(__file__).resolve().parent / "images" / "boss" / "boss.png"
+        self.sheet = pygame.image.load(str(sheet_path)).convert_alpha()
 
         self.frames = []
 
@@ -14,26 +17,26 @@ class Boss:
 
             self.frames.append(frame)
 
-            self.image = self.frames[0]
-            self.rect = self.image.get_rect(midbottom=(position[0] * zoom, position[1] * zoom))
+        self.image = self.frames[0]
+        self.rect = self.image.get_rect(midbottom=world_position)
 
-            self.state = "idle"
-            self.idle_frames = [0,1]
-            self.attack_frames = list(range(8))
+        self.state = "idle"
+        self.idle_frames = [0,1]
+        self.attack_frames = list(range(8))
 
-            self.frame_index = 0
-            self.animation_timer = 0
+        self.frame_index = 0
+        self.animation_timer = 0
 
-            self.idle_speed = 0.35
-            self.attack_speed = 0.12
+        self.idle_speed = 0.35
+        self.attack_speed = 0.12
 
-            self.attack_cooldown = 5
-            self.attack_timer = 0
+        self.attack_cooldown = 5
+        self.attack_timer = 0
 
-            self.blast_radius = 180 * zoom
-            self.blast_radius_increase = 200 * zoom
+        self.blast_radius = 180 * zoom
+        self.blast_radius_increase = 200 * zoom
 
-            self.blast_tiggered = False
+        self.blast_triggered = False
 
     def update(self,dt):
 

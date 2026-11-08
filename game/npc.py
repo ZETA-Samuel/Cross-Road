@@ -1,14 +1,14 @@
 import pygame
-import os
+from pathlib import Path
 
 class NPC:
     def __init__(self,name,image_name,portrait_name,position,dialogue,zoom):
         self.name = name
         self.dialogue = dialogue
         self.portrait_name = portrait_name
-        image_path = os.path.join("game","images","npc",image_name)
+        image_path = Path(__file__).resolve().parent / "images" / "npc" / image_name
 
-        self.image = pygame.image.load(image_path).convert_alpha()
+        self.image = pygame.image.load(str(image_path)).convert_alpha()
 
         original_width,original_height = self.image.get_size()
 

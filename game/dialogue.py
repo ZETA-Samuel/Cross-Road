@@ -1,4 +1,5 @@
 import pygame
+from pathlib import Path
 
 class DialogueBox:
 
@@ -19,10 +20,11 @@ class DialogueBox:
         self.typing_speed = 35
         self.typing_timer = 0
 
+        portraits_dir = Path(__file__).resolve().parent / "images" / "Portraits"
         self.portraits = {
-            "cat.png":   pygame.image.load("game/images/Portraits/cat.png").convert_alpha(),
-            "npc_1.png":   pygame.image.load("game/images/Portraits/npc_1.png").convert_alpha(),
-            "npc_2.png": pygame.image.load("game/images/Portraits/npc_2.png").convert_alpha()
+            "cat.png": pygame.image.load(str(portraits_dir / "cat.png")).convert_alpha(),
+            "npc_1.png": pygame.image.load(str(portraits_dir / "npc_1.png")).convert_alpha(),
+            "npc_2.png": pygame.image.load(str(portraits_dir / "npc_2.png")).convert_alpha()
 
         }
 
@@ -121,4 +123,3 @@ class DialogueBox:
         hint = self.font.render("SPACE:Continue   ESC:Exit",True,(180,180,180))
 
         self.screen.blit(hint,(self.panel.right - hint.get_width() - 20,self.panel.bottom - 30))
-
