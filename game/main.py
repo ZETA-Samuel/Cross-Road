@@ -1,6 +1,8 @@
 import pygame
 import asyncio
 from pytmx.util_pygame import load_pygame
+from npc import NPC
+from dialogue import DialogueBox
 
 pygame.init()
 
@@ -29,7 +31,7 @@ for direction in animations:
 
 current_direction = "Down"
 player_surf = animations["Down"][0]
-player_rect = player_surf.get_rect(topleft=(100,80))
+player_rect = player_surf.get_rect(topleft=(300,300))
 player_speed = 100 * zoom
 
 # animation variables
@@ -59,6 +61,27 @@ for x,y,image in collision_layer.tiles():
     rect = pygame.Rect(x * tmx_data.tilewidth * zoom, y * tmx_data.tileheight * zoom, tmx_data.tilewidth * zoom, tmx_data.tileheight * zoom)
 
     collision_rects.append(rect)
+
+npcs = [
+
+    NPC(
+        name="Lost traveller",
+        image_name="1.png",
+        position=(300,300),
+        dialogue=[
+            "Are you also lost?",
+            "Well there is a way out",
+            "Collect all the coins and head to the door",
+            "Don't worry about me :)"
+        ],
+        zoom=zoom
+        )
+
+]
+
+dialogue_box = DialogueBox(screen)
+INTERACTION_DISTANCE = 100 * zoom
+
 # # Player Class
 # class Player(pygame.sprite.Sprite):
 #     def __init__(self,pos):
@@ -127,6 +150,23 @@ CAMERA_MARGIN_Y = 200
 player_x = float(player_rect.x)
 player_y = float(player_rect.y)
 
+def get_nearest_npc():
+
+    nearest = None
+    closest_distance = INTERACTION_DISTANCE
+
+    for npc in npcs:
+
+        distance = pygame.Vector2(player_rect.center).distance_to(npc.rect.center)
+
+        if distance < closest_distance:
+            closest_distance = distance
+            nearest = npc
+
+        return nearest
+
+
+
 async def main():
     global camera_x,camera_y
     global player_x,player_y
@@ -140,26 +180,36 @@ async def main():
     while running:
 
         dt = clock.tick(60) / 1000
+        nearby_npc = get_nearest_npc()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    pass
+                if dialogue_box.active:
+                    if event.key == pygame.K_SPACE:
+                        dialogue_box.advance()
+                    elif event.key == pygame.K_ESCAPE:
+                        dialogue_box.close()
+                else:
+                    if event.key == pygame.K_e and nearby_npc:
+                        dialogue_box.start(nearby_npc)
+
         keys = pygame.key.get_pressed()
 
         dx = 0
         dy = 0
 
-        if keys[pygame.K_UP]:
-            dy = -1
-        if keys[pygame.K_DOWN]:
-            dy = 1
-        if keys[pygame.K_LEFT]:
-            dx = -1
-        if keys[pygame.K_RIGHT]:
-            dx = 1
+        if not dialogue_box.active:
+
+            if keys[pygame.K_UP]:
+                dy = -1
+            if keys[pygame.K_DOWN]:
+                dy = 1
+            if keys[pygame.K_LEFT]:
+                dx = -1
+            if keys[pygame.K_RIGHT]:
+                dx = 1
 
         direction = pygame.Vector2(dx,dy)
 
@@ -243,7 +293,17 @@ async def main():
 
         screen.blit(map_surface, (-camera_x,-camera_y))
 
+        for npc in npcs:
+            npc.draw(screen,camera_x,camera_y)
+
         screen.blit(player_surf,(player_rect.x - camera_x,player_rect.y - camera_y))
+
+        nearby_npc = get_nearest_npc()
+
+        if nearby_npc and not dialogue_box.active:
+            nearby_npc.draw_prompt(screen,camera_x,camera_y)
+
+        dialogue_box.draw()
 
         pygame.display.update()
         await asyncio.sleep(0)
