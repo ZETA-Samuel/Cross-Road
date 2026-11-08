@@ -2,10 +2,10 @@ import pygame
 import os
 
 class NPC:
-    def __init__(self,name,image_name,position,dialogue,zoom):
+    def __init__(self,name,image_name,portrait_name,position,dialogue,zoom):
         self.name = name
         self.dialogue = dialogue
-
+        self.portrait_name = portrait_name
         image_path = os.path.join("game","images","npc",image_name)
 
         self.image = pygame.image.load(image_path).convert_alpha()

@@ -20,7 +20,10 @@ class DialogueBox:
         self.typing_timer = 0
 
         self.portraits = {
-            "Cat": pygame.image.load("game/images/Portraits/cat.png").convert_alpha()
+            "cat.png":   pygame.image.load("game/images/Portraits/cat.png").convert_alpha(),
+            "npc_1.png":   pygame.image.load("game/images/Portraits/npc_1.png").convert_alpha(),
+            "npc_2.png": pygame.image.load("game/images/Portraits/npc_2.png").convert_alpha()
+
         }
 
         for name in self.portraits:
@@ -76,7 +79,7 @@ class DialogueBox:
 
         pygame.draw.rect(self.screen,(25,25,35),self.panel,border_radius=12)
 
-        portrait = self.portraits["Cat"]
+        portrait = self.portraits.get(self.npc.portrait_name)
 
         if portrait:
             self.screen.blit(portrait,(self.panel.x + 20, self.panel.y + 35))
@@ -113,6 +116,7 @@ class DialogueBox:
             text = self.font.render(line,True,"white")
 
             self.screen.blit(text,(self.panel.x + 140, self.panel.y + 65 + i * 27))
+            
 
         hint = self.font.render("SPACE:Continue   ESC:Exit",True,(180,180,180))
 
