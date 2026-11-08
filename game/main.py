@@ -3,6 +3,7 @@ import asyncio
 from pytmx.util_pygame import load_pygame
 from npc import NPC
 from dialogue import DialogueBox
+from boss import Boss
 
 pygame.init()
 pygame.mixer.init()
@@ -41,6 +42,29 @@ current_direction = "Down"
 player_surf = animations["Down"][0]
 player_rect = player_surf.get_rect(topleft=(300,300))
 player_speed = 100 * zoom
+
+COIN_POSITION = (300,300)
+PORTAL_POSITION = (700,300)
+
+PORTAL_DESTINATION = (100,100)
+
+coin_collected = False
+
+coin_rect = pygame.Rect(COIN_POSITION[0] * zoom,COIN_POSITION[1] * zoom,20 * zoom,20 * zoom)
+
+portal_rect = pygame.Rect(PORTAL_POSITION[0] * zoom,PORTAL_POSITION[1] * zoom, 40 * zoom, 60 * zoom)
+
+BOSS_POSITION = (600,300)
+
+boss = None
+game_timer = 0
+
+BOSS_SPAWN_TIME = 120
+
+red_flash_timer = 0
+RED_FLASH_DURATION = 0.2
+
+PLAYER_START = (300,300)
 
 # animation variables
 animation_index = 0
@@ -141,11 +165,45 @@ def get_nearest_npc():
 
     return nearest
 
+def draw_coin():
+    if coin_collected:
+        return
+    center = (coin_rect.centerx - camera_x,coin_rect.centery - camera_y)
+
+    pygame.draw.circle(screen,(255,190,0),center,15 * zoom)
+    pygame.draw.circle(screen, (255,235,80), center, 10 * zoom)
+    pygame.draw.circle(screen, (180,110,0), center,5 * zoom)
+
+def draw_portal():
+    center = portal_rect.center
+
+    pygame.draw.ellipse(screen,(100,30,200),(center[0] - 25 * zoom - camera_x,center[1] - 35 * zoom - camera_y, 50* zoom, 70 * zoom))
+
+    pygame.draw.ellipse(screen,(30,150,255),(center[0] - 17 * zoom - camera_x, center[1] - 27 * zoom - camera_y, 34 * zoom, 54 * zoom))
+
+    pygame.draw.ellipse(screen,(180,220,255),(center[0] - 8 * zoom - camera_x,center[1] - 18 * zoom - camera_y, 16 * zoom, 36 * zoom))
+
+def draw_coin_status():
+    font = pygame.font.Font(None,28)
+
+    if coin_collected:
+        message = "Portal key: COLLECTED"
+        color = (100,255,100)
+    else:
+        message = "Find the golden coin!!!"
+        color = (255,220,80)
+
+    text = font.render(message,True,color)
+    screen.blit(text, (15,15))
+
+
 async def main():
     global camera_x,camera_y
     global player_x,player_y
     global current_direction
     global player_rect
+    global coin_collected
+    global boss, game_timer, red_flash_timer
 
     animation_index = 0
     animation_timer = 0
@@ -155,6 +213,15 @@ async def main():
 
         dt = clock.tick(60) / 1000
         nearby_npc = get_nearest_npc()
+
+        game_timer += dt
+
+        if boss is None and game_timer >= BOSS_SPAWN_TIME:
+            boss = Boss(BOSS_POSITION, zoom)
+
+        portal_distance = pygame.Vector2(player_rect.center).distance_to(portal_rect.center)
+
+        near_portal = portal_distance < 60 * zoom
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -169,9 +236,47 @@ async def main():
                         dialogue_box.close()
                         pygame.mixer.music.play(-1)
                 else:
-                    if event.key == pygame.K_e and nearby_npc:
-                        dialogue_box.start(nearby_npc)
+                    if event.key == pygame.K_e:
+                        if near_portal:
+                            if coin_collected:
+                                player_x = PORTAL_DESTINATION[0] * zoom
+                                player_y = PORTAL_DESTINATION[1] * zoom
 
+                                player_rect.topleft = (round(player_x),round(player_y))
+
+                                camera_x = 0
+                                camera_y = 0
+
+                                print("Portal entered!")
+
+                            else:
+                                print("You need the golden coin!")
+
+                        elif nearby_npc:
+                            dialogue_box.start(nearby_npc)
+
+        if boss:
+
+            blast = boss.update(dt)
+
+            if blast:
+
+                red_flash_timer = RED_FLASH_DURATION
+
+                if boss.hits_player(player_rect):
+
+                    print("PLAYER HIT! RESPAWNING...")
+
+                    player_x = PLAYER_START[0] * zoom
+                    player_y = PLAYER_START[1] * zoom
+
+                    player_rect.topleft = (round(player_x),round(player_y))
+
+                    camera_x = 0
+                    camera_y = 0
+
+        if red_flash_timer > 0:
+            red_flash_timer = max(0, red_flash_timer - dt)
 
         keys = pygame.key.get_pressed()
 
@@ -215,6 +320,10 @@ async def main():
                 elif direction.y < 0:
                     player_rect.top = collision.bottom 
                 player_y = player_rect.y
+
+        if not coin_collected and player_rect.colliderect(coin_rect):
+            coin_collected = True
+
 
         if dx != 0 or dy != 0:
             if abs(dx) > abs(dy):
@@ -271,6 +380,16 @@ async def main():
 
         screen.blit(map_surface, (-camera_x,-camera_y))
 
+        if not coin_collected:
+            draw_coin()
+
+        draw_portal()
+
+        if boss:
+            boss.draw(screen,camera_x,camera_y)
+
+        draw_coin_status()
+
         for npc in npcs:
             npc.draw(screen,camera_x,camera_y)
 
@@ -284,6 +403,14 @@ async def main():
         dialogue_box.update(dt)
         
         dialogue_box.draw()
+
+        if red_flash_timer > 0:
+
+            red_overlay = pygame.Surface((width,height))
+            red_overlay.fill((255,0,0))
+            red_overlay.set_alpha(110)
+
+            screen.blit(red_overlay, (0,0))
 
         pygame.display.update()
         await asyncio.sleep(0)
