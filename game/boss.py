@@ -31,6 +31,7 @@ class Boss:
             self.attack_timer = 0
 
             self.blast_radius = 180 * zoom
+            self.blast_radius_increase = 200 * zoom
 
             self.blast_tiggered = False
 
@@ -63,6 +64,8 @@ class Boss:
 
                 if self.frame_index == 4:
                     self.blast_triggered = True
+
+                    self.blast_radius += self.blast_radius_increase
 
                 if self.frame_index >= 8:
 

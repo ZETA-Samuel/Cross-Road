@@ -14,12 +14,10 @@ pygame.display.set_caption("Cross Roads")
 
 clock = pygame.time.Clock()
 
-pygame.mixer.music.load("game/music/background.mp3")
+pygame.mixer.music.load("game/music/background.ogg")
 pygame.mixer.music.set_volume(0.4)
 pygame.mixer.music.play(-1)
 
-cat_sound = pygame.mixer.Sound("game/music/meow.mp3")
-cat_sound.set_volume(1)
 
 # loading maps
 zoom = 2
@@ -40,13 +38,13 @@ for direction in animations:
 
 current_direction = "Down"
 player_surf = animations["Down"][0]
-player_rect = player_surf.get_rect(topleft=(300,300))
+player_rect = player_surf.get_rect(topleft=(60,60))
 player_speed = 100 * zoom
 
-COIN_POSITION = (300,300)
-PORTAL_POSITION = (700,300)
+COIN_POSITION = (3879,919)
+PORTAL_POSITION = (6322,714)
 
-PORTAL_DESTINATION = (100,100)
+PORTAL_DESTINATION = (60,60)
 
 coin_collected = False
 
@@ -54,17 +52,18 @@ coin_rect = pygame.Rect(COIN_POSITION[0] * zoom,COIN_POSITION[1] * zoom,20 * zoo
 
 portal_rect = pygame.Rect(PORTAL_POSITION[0] * zoom,PORTAL_POSITION[1] * zoom, 40 * zoom, 60 * zoom)
 
-BOSS_POSITION = (600,300)
+BOSS_POSITION = (3879,919)
 
 boss = None
 game_timer = 0
+game_won = False
 
 BOSS_SPAWN_TIME = 120
 
 red_flash_timer = 0
 RED_FLASH_DURATION = 0.2
 
-PLAYER_START = (300,300)
+PLAYER_START = (60,60)
 
 # animation variables
 animation_index = 0
@@ -101,13 +100,14 @@ npcs = [
         name="Lost traveller",
         image_name="1.png",
         portrait_name="cat.png",
-        position=(330,300),
+        position=(768,30),
         dialogue=[
             "...",
-            "Hi my name is Squirk",
-            "I am also lost",
-            "This place has been turned into ruins by monsters",
-            "We must fight them to retain our peace",
+            "Hey!",
+            "You must be the Player.",
+            "Well, good luck getting out of this place.",
+            "It's lika a maze",
+            "Be quick though... I have heard bad things about this place",
         ],
         zoom=zoom
         ),
@@ -116,22 +116,23 @@ npcs = [
         name="Wanderer",
         image_name="npc_1.png",
         portrait_name="npc_1.png",
-        position=(330,350),
+        position=(768,1522),
         dialogue=[
             "...",
-            "This is a placeholder",
+            "Hey, here's a tip:",
+            "Collect the coin and leave asap, otherwise...",
         ],
         zoom = zoom,
     ),
 
     NPC(
-        name="Manjushree",
+        name="Watcher",
         image_name="npc_2.png",
         portrait_name="npc_2.png",
-        position=(300,400),
+        position=(2056,1440),
         dialogue=[
             "...",
-            "Hi, How are you?",
+            "Have you seen the Giant??",
         ],
         zoom = zoom,
     )
@@ -175,6 +176,7 @@ def draw_coin():
     pygame.draw.circle(screen, (180,110,0), center,5 * zoom)
 
 def draw_portal():
+
     center = portal_rect.center
 
     pygame.draw.ellipse(screen,(100,30,200),(center[0] - 25 * zoom - camera_x,center[1] - 35 * zoom - camera_y, 50* zoom, 70 * zoom))
@@ -196,6 +198,39 @@ def draw_coin_status():
     text = font.render(message,True,color)
     screen.blit(text, (15,15))
 
+def draw_portal_prompt():
+    if not near_portal:
+        return
+
+    if not coin_collected:
+        message = "Find the golden coin!"
+        color = (255,220,80)
+    else:
+        message = "E - Enter"
+        color = (100,250,155)
+
+    font = pygame.font.Font(None, 28)
+    text = font.render(message,True,color)
+
+    prompt_rect = text.get_rect(center=(portal_rect.centerx - camera_x,portal_rect.top - camera_y - 20))
+
+    background = prompt_rect.inflate(18,10)
+
+    pygame.draw.rect(screen,(30,30,30),background,border_radius=6)
+
+    screen.blit(text,prompt_rect)
+
+def end_screen():
+    screen.fill((10,15,25))
+    title_font = pygame.font.Font(None,80)
+    font = pygame.font.Font(None, 36)
+    title = title_font.render("You WON!",True,(255,255,255))
+    message = font.render("You escaped the ruins!",True,(255,255,255))
+    hint = font.render("Press ESC to quit",True,(170,170,170))
+
+    screen.blit(title, title.get_rect(center=(width // 2, 230)))
+    screen.blit(message, message.get_rect(center=(width // 2, 310)))
+    screen.blit(hint, hint.get_rect(center=(width // 2, 390)))
 
 async def main():
     global camera_x,camera_y
@@ -204,6 +239,8 @@ async def main():
     global player_rect
     global coin_collected
     global boss, game_timer, red_flash_timer
+    global near_portal
+    global game_won 
 
     animation_index = 0
     animation_timer = 0
@@ -228,32 +265,36 @@ async def main():
                 running = False
             if event.type == pygame.KEYDOWN:
                 if dialogue_box.active:
-                    pygame.mixer.music.stop()
                     if event.key == pygame.K_SPACE:
                         dialogue_box.advance()
-                        cat_sound.play()
                     elif event.key == pygame.K_ESCAPE:
                         dialogue_box.close()
-                        pygame.mixer.music.play(-1)
                 else:
                     if event.key == pygame.K_e:
                         if near_portal:
                             if coin_collected:
-                                player_x = PORTAL_DESTINATION[0] * zoom
-                                player_y = PORTAL_DESTINATION[1] * zoom
-
-                                player_rect.topleft = (round(player_x),round(player_y))
-
-                                camera_x = 0
-                                camera_y = 0
-
-                                print("Portal entered!")
+                                game_won = True
+                                pygame.mixer.music.stop()
 
                             else:
                                 print("You need the golden coin!")
 
                         elif nearby_npc:
                             dialogue_box.start(nearby_npc)
+
+        if game_won:
+            end_screen()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+
+            pygame.display.update()
+
+            await asyncio.sleep(0)
+            continue
 
         if boss:
 
@@ -321,6 +362,8 @@ async def main():
                     player_rect.top = collision.bottom 
                 player_y = player_rect.y
 
+
+
         if not coin_collected and player_rect.colliderect(coin_rect):
             coin_collected = True
 
@@ -351,6 +394,21 @@ async def main():
 
         old_center = player_rect.center
         player_rect = player_surf.get_rect(center=old_center)
+
+        if player_rect.left < 0:
+            player_rect.left = 0
+
+        if player_rect.right > map_width:
+            player_rect.right = map_width
+
+        if player_rect.top < 0:
+            player_rect.top = 0
+
+        if player_rect.bottom > map_height:
+            player_rect.bottom = map_height
+
+        player_x = float(player_rect.x)
+        player_y = float(player_rect.y)
 
         player_rect.topleft = (round(player_x), round(player_y))
 
@@ -384,7 +442,7 @@ async def main():
             draw_coin()
 
         draw_portal()
-
+        draw_portal_prompt()
         if boss:
             boss.draw(screen,camera_x,camera_y)
 
@@ -411,6 +469,8 @@ async def main():
             red_overlay.set_alpha(110)
 
             screen.blit(red_overlay, (0,0))
+
+        print(player_x,player_y)
 
         pygame.display.update()
         await asyncio.sleep(0)
