@@ -33,8 +33,8 @@ class Boss:
         self.attack_cooldown = 5
         self.attack_timer = 0
 
-        self.blast_radius = 180 * zoom
-        self.blast_radius_increase = 200 * zoom
+        self.blast_radius = 200 * zoom
+        self.blast_radius_increase = 0 * zoom
 
         self.blast_triggered = False
 

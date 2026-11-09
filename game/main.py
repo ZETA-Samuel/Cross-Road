@@ -62,13 +62,13 @@ coin_rect = pygame.Rect(*COIN_WORLD_POSITION,20 * zoom,20 * zoom)
 
 portal_rect = pygame.Rect(*PORTAL_WORLD_POSITION,40 * zoom,60 * zoom)
 
-BOSS_WORLD_POSITION = COIN_WORLD_POSITION
-
 boss = None
 game_timer = 0
+boss_active_timer = 0
 game_won = False
 
-BOSS_SPAWN_TIME = 120
+BOSS_SPAWN_TIME = 20
+BOSS_RESPAWN_TIME = 10
 
 red_flash_timer = 0
 RED_FLASH_DURATION = 0.2
@@ -158,6 +158,48 @@ CAMERA_MARGIN_Y = 200
 player_x = float(player_rect.x)
 player_y = float(player_rect.y)
 
+def spawn_boss_near_player():
+    boss_half_size = 50 * zoom
+    player_screen_x = player_rect.centerx - camera_x
+    player_screen_y = player_rect.centery - camera_y
+
+    if player_screen_x <= width / 2:
+        spawn_screen_x = min(player_screen_x + 300, width - boss_half_size)
+    else:
+        spawn_screen_x = max(player_screen_x - 300, boss_half_size)
+
+    vertical_offset = 120 if player_screen_y <= height / 2 else -120
+    spawn_screen_y = max(
+        boss_half_size,
+        min(
+            player_screen_y + vertical_offset,
+            height - boss_half_size,
+        ),
+    )
+
+    world_position = (
+        round(camera_x + spawn_screen_x),
+        round(camera_y + spawn_screen_y + boss_half_size),
+    )
+    return Boss(world_position, zoom)
+
+def distance_to_coin():
+    coin_distance = pygame.Vector2(player_rect.center).distance_to(coin_rect.center)
+    portal_distance = pygame.Vector2(player_rect.center).distance_to(portal_rect.center)
+    bar = pygame.Rect(300,20,200,20)
+    pygame.draw.rect(screen, (0,0,0),bar)
+    if not coin_collected:
+        s = pygame.Vector2(PLAYER_START).distance_to(coin_rect.center)
+        close_by = (s-coin_distance)/s * 200
+        close = pygame.Rect(300,20,close_by,20)
+        pygame.draw.rect(screen,(0,255,0),close)
+
+    elif coin_collected and not game_won:
+        s = pygame.Vector2(PLAYER_START).distance_to(portal_rect.center)
+        close_by = (s - portal_distance)/s * 200
+        close = pygame.Rect(300,20,close_by,20)
+        pygame.draw.rect(screen,(0,0,255),close)
+
 def get_nearest_npc():
 
     nearest = None
@@ -233,11 +275,10 @@ def end_screen():
     font = pygame.font.Font(None, 36)
     title = title_font.render("You WON!",True,(255,255,255))
     message = font.render("You escaped the ruins!",True,(255,255,255))
-    hint = font.render("Press ESC to quit",True,(170,170,170))
 
     screen.blit(title, title.get_rect(center=(width // 2, 230)))
     screen.blit(message, message.get_rect(center=(width // 2, 310)))
-    screen.blit(hint, hint.get_rect(center=(width // 2, 390)))
+
 
 async def main():
     global camera_x,camera_y
@@ -245,7 +286,7 @@ async def main():
     global current_direction
     global player_rect
     global coin_collected
-    global boss, game_timer, red_flash_timer
+    global boss, game_timer, boss_active_timer, red_flash_timer
     global near_portal
     global game_won 
 
@@ -258,10 +299,17 @@ async def main():
         dt = clock.tick(60) / 1000
         nearby_npc = get_nearest_npc()
 
-        game_timer += dt
-
-        if boss is None and game_timer >= BOSS_SPAWN_TIME:
-            boss = Boss(BOSS_WORLD_POSITION, zoom)
+        if boss is None:
+            game_timer += dt
+            if game_timer >= BOSS_SPAWN_TIME:
+                boss = spawn_boss_near_player()
+                game_timer = 0
+                boss_active_timer = 0
+        else:
+            boss_active_timer += dt
+            if boss_active_timer >= BOSS_RESPAWN_TIME:
+                boss = spawn_boss_near_player()
+                boss_active_timer = 0
 
         portal_distance = pygame.Vector2(player_rect.center).distance_to(portal_rect.center)
 
@@ -314,6 +362,10 @@ async def main():
                 if boss.hits_player(player_rect):
 
                     print("PLAYER HIT! RESPAWNING...")
+
+                    boss = None
+                    game_timer = 0
+                    boss_active_timer = 0
 
                     player_x, player_y = PLAYER_START
 
@@ -460,6 +512,8 @@ async def main():
         screen.blit(player_surf,(player_rect.x - camera_x,player_rect.y - camera_y))
 
         nearby_npc = get_nearest_npc()
+
+        distance_to_coin()
 
         if nearby_npc and not dialogue_box.active:
             nearby_npc.draw_prompt(screen,camera_x,camera_y)
