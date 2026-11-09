@@ -1,0 +1,48 @@
+name: pygbag_build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pygbag-pages
+  cancel-in-progress: true
+
+jobs:
+  build-pygbag:
+    name: Build and publish the game
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Pygbag
+        run: python -m pip install --upgrade pygbag
+
+      # Pygbag rejects MP3 files for browser builds. The game uses the matching
+      # OGG files, so discard the desktop-only MP3 copies before building.
+      - name: Remove web-incompatible MP3 assets
+        run: find game -type f -iname '*.mp3' -delete
+
+      - name: Build for the browser
+        working-directory: game
+        run: python -m pygbag --build .
+
+      - name: Publish to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          folder: game/build/web
+          clean: true
